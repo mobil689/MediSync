@@ -5,12 +5,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * Repository handling medication data.
  * Currently uses in-memory mock data, but ready for Firebase integration.
  */
-class MedicationRepository {
+object MedicationRepository {
     private val _medications = MutableStateFlow<List<Medication>>(
         listOf(
             Medication(name = "Lisinopril", dosage = "10 mg", time = "8:00 AM", timeOfDay = "morning", isTaken = false),
@@ -44,7 +46,18 @@ class MedicationRepository {
                 val newState = !it.isTaken
                 it.copy(
                     isTaken = newState,
-                    loggedTime = if (newState) "Just now" else null
+                    loggedTime = if (newState) SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date()) else null
+                )
+            } else it
+        }
+    }
+
+    fun markAsTaken(id: String) {
+        _medications.value = _medications.value.map {
+            if (it.id == id) {
+                it.copy(
+                    isTaken = true,
+                    loggedTime = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
                 )
             } else it
         }

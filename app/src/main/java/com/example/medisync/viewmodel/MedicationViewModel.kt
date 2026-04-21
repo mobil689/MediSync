@@ -1,9 +1,11 @@
 package com.example.medisync.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.medisync.data.model.Medication
 import com.example.medisync.data.repository.MedicationRepository
+import com.example.medisync.util.AlarmScheduler
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -15,8 +17,9 @@ data class TodayUiState(
     val isDeleteConfirmOpen: Boolean = false
 )
 
-class MedicationViewModel : ViewModel() {
-    private val repository = MedicationRepository()
+class MedicationViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository = MedicationRepository
+    private val context = application.applicationContext
 
     private val _uiState = MutableStateFlow(TodayUiState())
     val uiState: StateFlow<TodayUiState> = _uiState.asStateFlow()
@@ -65,10 +68,14 @@ class MedicationViewModel : ViewModel() {
                 timeOfDay = calculateTimeOfDay(timeStr)
             )
             repository.addMedication(medication)
+            AlarmScheduler.scheduleAlarm(context, medication)
         }
     }
 
     fun deleteSelected() {
+        val selectedMedications = _uiState.value.medications.filter { it.id in _uiState.value.selectedIds }
+        selectedMedications.forEach { AlarmScheduler.cancelAlarm(context, it) }
+
         repository.deleteMedications(_uiState.value.selectedIds)
         clearSelection()
         toggleDeleteConfirm(false)

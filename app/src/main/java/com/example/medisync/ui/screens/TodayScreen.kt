@@ -3,11 +3,16 @@ package com.example.medisync.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +26,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -157,29 +164,31 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
             Spacer(modifier = Modifier.height(12.dp))
 
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 100.dp)
+                contentPadding = PaddingValues(bottom = 100.dp, top = 8.dp)
             ) {
                 items(medications, key = { it.id }) { medication ->
                     val isSelected = selectedIds.contains(medication.id)
-                    MedicationCard(
-                        medication = medication,
-                        isSelectionMode = isSelectionMode,
-                        isSelected = isSelected,
-                        onToggle = { 
-                            if (isSelectionMode) {
-                                if (isSelected) selectedIds.remove(medication.id) else selectedIds.add(medication.id)
-                            } else {
-                                viewModel.toggleMedication(medication.id)
+                    Box(modifier = Modifier.animateItemPlacement()) {
+                        MedicationCard(
+                            medication = medication,
+                            isSelectionMode = isSelectionMode,
+                            isSelected = isSelected,
+                            onToggle = { 
+                                if (isSelectionMode) {
+                                    if (isSelected) selectedIds.remove(medication.id) else selectedIds.add(medication.id)
+                                } else {
+                                    viewModel.toggleMedication(medication.id)
+                                }
+                            },
+                            onLongPress = {
+                                if (!isSelectionMode) {
+                                    selectedIds.add(medication.id)
+                                }
                             }
-                        },
-                        onLongPress = {
-                            if (!isSelectionMode) {
-                                selectedIds.add(medication.id)
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
                 
                 item {
@@ -197,8 +206,17 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
 
         // Add FAB
         if (!isSelectionMode) {
+            val fabInteractionSource = remember { MutableInteractionSource() }
+            val fabPressed by fabInteractionSource.collectIsPressedAsState()
+            val fabScale by animateFloatAsState(
+                targetValue = if (fabPressed) 0.92f else 1f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                label = "fabScale"
+            )
+
             FloatingActionButton(
                 onClick = { showAddDrawer = true },
+                interactionSource = fabInteractionSource,
                 containerColor = Color.Transparent,
                 contentColor = Color.White,
                 shape = CircleShape,
@@ -206,13 +224,14 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
                     .align(Alignment.BottomEnd)
                     .padding(bottom = 24.dp, end = 20.dp)
                     .size(56.dp)
+                    .scale(fabScale)
                     .background(
                         Brush.linearGradient(
                             colors = listOf(Color(0xFF5C6BC0), Color(0xFF7E57C2))
                         ),
                         shape = CircleShape
                     ),
-                elevation = FloatingActionButtonDefaults.elevation(8.dp)
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp, pressedElevation = 12.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add medication", modifier = Modifier.size(24.dp))
             }
@@ -251,13 +270,37 @@ fun MedicationCard(
     onToggle: () -> Unit,
     onLongPress: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+
+    val elevation by animateDpAsState(
+        targetValue = if (isPressed) 8.dp else 2.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "elevation"
+    )
+
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .scale(scale)
+            .shadow(elevation, RoundedCornerShape(24.dp))
             .combinedClickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.foundation.LocalIndication.current,
                 onClick = onToggle,
                 onLongClick = onLongPress
             ),
@@ -330,45 +373,65 @@ fun MedicationCard(
                         fontSize = 14.sp,
                         color = Color(0xFF64748B)
                     )
-                    if (medication.isTaken && medication.loggedTime != null) {
-                        Text(
-                            text = buildAnnotatedString {
-                                append(" · ")
-                                withStyle(style = SpanStyle(color = Color(0xFF4CAF50))) {
-                                    append("logged ${medication.loggedTime}")
-                                }
-                            },
-                            fontSize = 14.sp
-                        )
+                    
+                    AnimatedVisibility(
+                        visible = medication.isTaken,
+                        enter = fadeIn() + slideInHorizontally(),
+                        exit = fadeOut() + slideOutHorizontally()
+                    ) {
+                        if (medication.loggedTime != null) {
+                            Text(
+                                text = buildAnnotatedString {
+                                    append(" · ")
+                                    withStyle(style = SpanStyle(color = Color(0xFF4CAF50))) {
+                                        append("logged ${medication.loggedTime}")
+                                    }
+                                },
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }
 
             if (!isSelectionMode) {
-                if (medication.isTaken) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF4CAF50)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Taken",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                } else {
-                    Button(
-                        onClick = onToggle,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA726)),
-                        shape = RoundedCornerShape(16.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        modifier = Modifier.height(44.dp)
-                    ) {
-                        Text("Take", color = Color.White, fontWeight = FontWeight.Bold)
+                Box(contentAlignment = Alignment.Center) {
+                    AnimatedContent(
+                        targetState = medication.isTaken,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(220, delayMillis = 90)) + 
+                             scaleIn(initialScale = 0.92f, animationSpec = tween(220, delayMillis = 90)))
+                            .togetherWith(fadeOut(animationSpec = tween(90)))
+                        },
+                        label = "status_badge"
+                    ) { isTaken ->
+                        if (isTaken) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFF4CAF50))
+                                    .clickable { onToggle() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Taken",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = onToggle,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA726)),
+                                shape = RoundedCornerShape(16.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                modifier = Modifier.height(44.dp)
+                            ) {
+                                Text("Take", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }

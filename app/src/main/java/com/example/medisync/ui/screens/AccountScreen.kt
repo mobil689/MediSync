@@ -5,10 +5,10 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,9 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke as DrawScopeStroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -108,13 +106,13 @@ fun AccountScreen(onLogout: () -> Unit, medViewModel: MedicationViewModel = view
                     progress = dailyProgress
                 )
                 StatsCard(
-                    title = "$streakValue Day",
-                    value = "STREAK!",
+                    title = if (streakValue > 0) "$streakValue Day" else "No Streak",
+                    value = if (streakValue > 0) "STREAK!" else "KEEP GOING",
                     subValue = "",
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.LocalFireDepartment,
-                    iconColor = Color(0xFF795548),
-                    iconBg = Color(0xFFFFF3E0)
+                    iconColor = if (streakValue > 0) Color(0xFFFB8C00) else Color(0xFFB0BEC5),
+                    iconBg = if (streakValue > 0) Color(0xFFFFF3E0) else Color(0xFFECEFF1)
                 )
             }
 
@@ -269,6 +267,12 @@ fun StatsCard(
     iconColor: Color = Color.Unspecified,
     iconBg: Color = Color.Transparent
 ) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "progressAnimation"
+    )
+
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -282,14 +286,22 @@ fun StatsCard(
             if (isProgress) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(80.dp)) {
                     CircularProgressIndicator(
-                        progress = { progress },
+                        progress = { animatedProgress },
                         modifier = Modifier.fillMaxSize(),
-                        color = Color(0xFF2E7D32),
+                        color = Color(0xFF4CAF50),
                         strokeWidth = 8.dp,
                         trackColor = Color(0xFFE8F5E9),
                         strokeCap = StrokeCap.Round
                     )
-                    Text(text = value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                    AnimatedContent(
+                        targetState = value,
+                        transitionSpec = {
+                            (slideInVertically { it } + fadeIn()).togetherWith(slideOutVertically { -it } + fadeOut())
+                        },
+                        label = "valueAnimation"
+                    ) { targetValue ->
+                        Text(text = targetValue, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                    }
                 }
             } else if (icon != null) {
                 Box(
@@ -301,13 +313,33 @@ fun StatsCard(
                 ) {
                     Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(32.dp))
                 }
-                Text(text = value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+                AnimatedContent(
+                    targetState = value,
+                    transitionSpec = {
+                        (slideInVertically { it } + fadeIn()).togetherWith(slideOutVertically { -it } + fadeOut())
+                    },
+                    label = "streakValueAnimation"
+                ) { targetValue ->
+                    Text(text = targetValue, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+                }
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = title, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color(0xFF64748B), textAlign = TextAlign.Center)
+                AnimatedContent(
+                    targetState = title,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "titleAnimation"
+                ) { targetTitle ->
+                    Text(text = targetTitle, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color(0xFF64748B), textAlign = TextAlign.Center)
+                }
                 if (subValue.isNotEmpty()) {
-                    Text(text = subValue, fontSize = 11.sp, color = Color(0xFF64748B), textAlign = TextAlign.Center)
+                    AnimatedContent(
+                        targetState = subValue,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        label = "subValueAnimation"
+                    ) { targetSubValue ->
+                        Text(text = targetSubValue, fontSize = 11.sp, color = Color(0xFF64748B), textAlign = TextAlign.Center)
+                    }
                 }
             }
         }
@@ -413,9 +445,9 @@ fun EmergencyMedicalIDCard(
                     )
                 } else {
                     MedicalIdRow("Blood Type", bloodType)
-                    Divider(color = Color(0xFFEF5350).copy(alpha = 0.1f))
+                    HorizontalDivider(color = Color(0xFFEF5350).copy(alpha = 0.1f))
                     MedicalIdRow("Allergies", allergies)
-                    Divider(color = Color(0xFFEF5350).copy(alpha = 0.1f))
+                    HorizontalDivider(color = Color(0xFFEF5350).copy(alpha = 0.1f))
                     Column {
                         Text("Emergency Contact", fontSize = 12.sp, color = Color(0xFF64748B))
                         Text(contactName, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
@@ -474,11 +506,11 @@ fun SettingsCard(
     ) {
         Column {
             SettingsRow(Icons.Default.Notifications, "Notification Preferences", "Push: ON", Color(0xFFE3F2FD), Color(0xFF2196F3), onNotificationsClick)
-            Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F5F9))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F5F9))
             SettingsRow(Icons.Default.Watch, "Connected Devices", null, Color(0xFFEDE7F6), Color(0xFF9575CD), {})
-            Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F5F9))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F5F9))
             SettingsRow(Icons.Default.FileUpload, "Medical Reports", null, Color(0xFFE8F5E9), Color(0xFF4CAF50), onReportsClick)
-            Divider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F5F9))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F5F9))
             SettingsRow(Icons.Default.Language, "Language & Region", "English", Color(0xFFFFF3E0), Color(0xFFFFA726), onLanguageClick)
         }
     }

@@ -47,6 +47,7 @@ import com.example.medisync.viewmodel.MedicationViewModel
 fun AccountScreen(onLogout: () -> Unit, medViewModel: MedicationViewModel = viewModel()) {
     val scrollState = rememberScrollState()
     val medications by medViewModel.medications.collectAsState()
+    val userName by medViewModel.userName.collectAsState()
     
     // Logic for Stats
     val takenToday = medications.count { it.isTaken }
@@ -57,7 +58,6 @@ fun AccountScreen(onLogout: () -> Unit, medViewModel: MedicationViewModel = view
     val streakValue = if (dailyProgress == 1f && totalToday > 0) 5 else 0 
 
     // State for Profile Name
-    var userName by remember { mutableStateOf("Eleanor Vance") }
     var showNameEditDialog by remember { mutableStateOf(false) }
 
     // State for Emergency Medical ID
@@ -149,7 +149,7 @@ fun AccountScreen(onLogout: () -> Unit, medViewModel: MedicationViewModel = view
                 currentName = userName,
                 onDismiss = { showNameEditDialog = false },
                 onConfirm = { 
-                    userName = it
+                    medViewModel.updateUserName(it)
                     showNameEditDialog = false
                 }
             )

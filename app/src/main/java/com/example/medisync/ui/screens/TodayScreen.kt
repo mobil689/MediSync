@@ -30,6 +30,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -63,8 +64,21 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
     
     val medications by viewModel.medications.collectAsState()
+    val userName by viewModel.userName.collectAsState()
     val selectedIds = remember { mutableStateListOf<String>() }
     val isSelectionMode = selectedIds.isNotEmpty()
+
+    val blurRadius by animateDpAsState(
+        targetValue = if (showAddDrawer || showDeleteConfirm) 10.dp else 0.dp,
+        animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
+        label = "blur"
+    )
+    
+    val bgScale by animateFloatAsState(
+        targetValue = if (showAddDrawer || showDeleteConfirm) 0.95f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+        label = "bgScale"
+    )
 
     val takenCount = medications.count { it.isTaken }
     val totalCount = medications.size
@@ -85,6 +99,8 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp)
+                .scale(bgScale)
+                .blur(blurRadius)
         ) {
             Spacer(modifier = Modifier.height(40.dp))
             
@@ -102,7 +118,7 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "Good morning, Alex",
+                        text = "Good morning, ${userName.split(" ").firstOrNull() ?: "User"}",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E293B),
@@ -577,10 +593,15 @@ fun AddMedicationDrawer(onDismiss: () -> Unit, onSave: (String, String, String) 
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                placeholder = { Text("e.g. Lisinopril") },
+                placeholder = { Text("e.g. Lisinopril", color = Color(0xFF94A3B8)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0), focusedBorderColor = Color(0xFF5C6BC0))
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                    focusedBorderColor = Color(0xFF5C6BC0),
+                    focusedTextColor = Color(0xFF1E293B),
+                    unfocusedTextColor = Color(0xFF1E293B)
+                )
             )
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -590,10 +611,15 @@ fun AddMedicationDrawer(onDismiss: () -> Unit, onSave: (String, String, String) 
             OutlinedTextField(
                 value = dosage,
                 onValueChange = { dosage = it },
-                placeholder = { Text("e.g. 10 mg") },
+                placeholder = { Text("e.g. 10 mg", color = Color(0xFF94A3B8)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0), focusedBorderColor = Color(0xFF5C6BC0))
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                    focusedBorderColor = Color(0xFF5C6BC0),
+                    focusedTextColor = Color(0xFF1E293B),
+                    unfocusedTextColor = Color(0xFF1E293B)
+                )
             )
             
             Spacer(modifier = Modifier.height(24.dp))

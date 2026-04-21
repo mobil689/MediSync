@@ -4,12 +4,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.medisync.data.model.Medication
 import com.example.medisync.data.repository.MedicationRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 
 class MedicationViewModel : ViewModel() {
     private val repository = MedicationRepository() // Normally injected via Hilt
+
+    private val _userName = MutableStateFlow("Eleanor Vance")
+    val userName: StateFlow<String> = _userName.asStateFlow()
+
+    fun updateUserName(newName: String) {
+        _userName.value = newName
+    }
 
     val medications: StateFlow<List<Medication>> = repository.medications
         .stateIn(

@@ -165,9 +165,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             shape = CircleShape,
                             color = Color.White
                         ) {
-                             Box(contentAlignment = Alignment.Center) {
-                                 Text("G", fontWeight = FontWeight.Bold, color = Color(0xFF4285F4))
-                             }
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("G", fontWeight = FontWeight.Bold, color = Color(0xFF4285F4))
+                            }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
@@ -183,7 +183,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Tag("v1.0.0-beta", Color(0xFFF1F5F9), Color(0xFF64748B))
                 Tag("Encrypted", Color(0xFFE8F5E9), Color(0xFF4CAF50))

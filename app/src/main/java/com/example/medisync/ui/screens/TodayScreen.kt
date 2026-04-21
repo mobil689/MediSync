@@ -129,7 +129,7 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
                     ) {
                         Text(
                             text = today,
-                            color = Color(0xFF64748B),
+                            color = Color.Black,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -137,7 +137,7 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
                             text = "Good morning, ${uiState.userName}",
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B),
+                            color = Color.Black,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
@@ -169,7 +169,7 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
                             text = "${uiState.selectedIds.size} SELECTED · HOLD TO SELECT MORE",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF64748B)
+                            color = Color.Black
                         )
                         TextButton(onClick = { viewModel.clearSelection() }) {
                             Text("Cancel", color = Color(0xFF5C6BC0), fontWeight = FontWeight.Bold)
@@ -178,16 +178,16 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
                 } else {
                     Text(
                         text = buildAnnotatedString {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))) {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color.Black)) {
                                 append(takenCount.toString())
                             }
                             append(" of ")
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))) {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color.Black)) {
                                 append(totalCount.toString())
                             }
                             append(" doses logged today")
                         },
-                        color = Color(0xFF64748B),
+                        color = Color.Black,
                         fontSize = 14.sp,
                         modifier = Modifier.padding(top = 8.dp).graphicsLayer {
                             if (scrollState.firstVisibleItemIndex == 0) {
@@ -205,7 +205,7 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
                     text = "TODAY'S SCHEDULE",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF64748B),
+                    color = Color.Black,
                     letterSpacing = 1.sp
                 )
 
@@ -246,7 +246,7 @@ fun TodayScreen(viewModel: MedicationViewModel = viewModel()) {
                             text = "Tip: hold a card for 2 seconds to select & delete.",
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            color = Color(0xFF64748B),
+                            color = Color.Black,
                             fontSize = 13.sp
                         )
                     }
@@ -399,13 +399,13 @@ fun MedicationCard(
                         text = medication.name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = Color(0xFF1E293B)
+                        color = Color.Black
                     )
                     Text(
                         text = medication.dosage,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF64748B)
+                        color = Color.Black
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
@@ -413,13 +413,13 @@ fun MedicationCard(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint = Color(0xFF64748B)
+                        tint = Color.Black
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = medication.time,
                         fontSize = 14.sp,
-                        color = Color(0xFF64748B)
+                        color = Color.Black
                     )
 
                     AnimatedVisibility(
@@ -524,7 +524,7 @@ fun DeleteMedicationDrawer(count: Int, onDismiss: () -> Unit, onConfirm: () -> U
                 text = "Delete selected schedules?",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B)
+                color = Color.Black
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -532,7 +532,7 @@ fun DeleteMedicationDrawer(count: Int, onDismiss: () -> Unit, onConfirm: () -> U
             Text(
                 text = "This medication schedule will be permanently removed. You can always add them back later.",
                 fontSize = 14.sp,
-                color = Color(0xFF64748B),
+                color = Color.Black,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 lineHeight = 20.sp
             )
@@ -546,9 +546,9 @@ fun DeleteMedicationDrawer(count: Int, onDismiss: () -> Unit, onConfirm: () -> U
                     shape = RoundedCornerShape(16.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF1E293B))
+                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Black)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Cancel", color = Color(0xFF1E293B), fontWeight = FontWeight.Bold)
+                    Text("Cancel", color = Color.Black, fontWeight = FontWeight.Bold)
                 }
 
                 Button(
@@ -601,46 +601,46 @@ fun AddMedicationDrawer(onDismiss: () -> Unit, onSave: (String, String, String, 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(text = "Add medication", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
-                    Text(text = "We'll add it to today's schedule.", fontSize = 14.sp, color = Color(0xFF64748B), modifier = Modifier.padding(top = 4.dp))
+                    Text(text = "Add medication", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text(text = "We'll add it to today's schedule.", fontSize = 14.sp, color = Color.Black, modifier = Modifier.padding(top = 4.dp))
                 }
                 IconButton(
                     onClick = onDismiss,
                     modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFF1F5F9))
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color(0xFF64748B), modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Black, modifier = Modifier.size(18.dp))
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("NAME", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B), letterSpacing = 1.sp)
+            Text("NAME", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Black, letterSpacing = 1.sp)
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                placeholder = { Text("e.g. Lisinopril") },
+                placeholder = { Text("e.g. Lisinopril", color = Color.Black.copy(alpha = 0.5f)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0), focusedBorderColor = Color(0xFF5C6BC0))
+                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0), focusedBorderColor = Color(0xFF5C6BC0), focusedTextColor = Color.Black, unfocusedTextColor = Color.Black)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text("DOSE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B), letterSpacing = 1.sp)
+            Text("DOSE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Black, letterSpacing = 1.sp)
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
                 value = dosage,
                 onValueChange = { dosage = it },
-                placeholder = { Text("e.g. 10 mg") },
+                placeholder = { Text("e.g. 10 mg", color = Color.Black.copy(alpha = 0.5f)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0), focusedBorderColor = Color(0xFF5C6BC0))
+                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0), focusedBorderColor = Color(0xFF5C6BC0), focusedTextColor = Color.Black, unfocusedTextColor = Color.Black)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Timing", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+            Text("Timing", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
             Spacer(modifier = Modifier.height(16.dp))
 
             WheelTimePickerView(
@@ -653,7 +653,7 @@ fun AddMedicationDrawer(onDismiss: () -> Unit, onSave: (String, String, String, 
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("SCHEDULE ON", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B), letterSpacing = 1.sp)
+            Text("SCHEDULE ON", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Black, letterSpacing = 1.sp)
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
@@ -724,7 +724,7 @@ fun DayChip(day: String, isSelected: Boolean, onToggle: () -> Unit) {
         label = "chipBorder"
     )
     val textColor by animateColorAsState(
-        if (isSelected) Color(0xFF5C6BC0) else Color(0xFF64748B),
+        if (isSelected) Color(0xFF5C6BC0) else Color.Black,
         label = "chipText"
     )
 
@@ -805,7 +805,7 @@ fun WheelTimePickerView(onTimeChanged: (Int, Int, String) -> Unit) {
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B)
+                        color = Color.Black
                     )
                 }
             }
@@ -833,7 +833,7 @@ fun WheelTimePickerView(onTimeChanged: (Int, Int, String) -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 WheelColumn(state = hourState, items = hours, modifier = Modifier.weight(1f))
-                Text(":", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B), modifier = Modifier.padding(horizontal = 8.dp))
+                Text(":", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.Black, modifier = Modifier.padding(horizontal = 8.dp))
                 WheelColumn(state = minuteState, items = minutes, modifier = Modifier.weight(1f), isMinute = true)
                 Spacer(modifier = Modifier.width(16.dp))
                 WheelColumn(state = amPmState, items = amPm, modifier = Modifier.weight(0.8f))
@@ -884,7 +884,7 @@ fun WheelColumn(
                     text = if (isMinute) String.format(Locale.US, "%02d", item) else item.toString(),
                     fontSize = 20.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = Color(0xFF1E293B),
+                    color = Color.Black,
                     modifier = Modifier
                         .scale(scale)
                         .alpha(alpha)

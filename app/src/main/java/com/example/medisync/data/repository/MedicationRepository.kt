@@ -4,6 +4,7 @@ import com.example.medisync.data.model.Medication
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 
 /**
  * Repository handling medication data.
@@ -18,6 +19,16 @@ class MedicationRepository {
         )
     )
     val medications: Flow<List<Medication>> = _medications.asStateFlow()
+
+    suspend fun getAiMedicationContext(): String {
+        val currentMeds = medications.first()
+        if (currentMeds.isEmpty()) return "User is not currently taking any recorded medications."
+        
+        val medString = currentMeds.joinToString("\n") { med ->
+            "User is currently taking: ${med.name} (${med.dosage}) ${if(med.timeOfDay == "morning" || med.timeOfDay == "evening") "1" else "multiple"} times daily."
+        }
+        return medString
+    }
 
     fun addMedication(medication: Medication) {
         _medications.value = _medications.value + medication

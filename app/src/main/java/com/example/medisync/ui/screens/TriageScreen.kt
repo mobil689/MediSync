@@ -2,6 +2,7 @@ package com.example.medisync.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,9 +20,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,47 +41,37 @@ data class ChatMessage(
 
 @Composable
 fun TriageScreen(viewModel: TriageViewModel = viewModel()) {
-    var isChatExpanded by remember { mutableStateOf(false) }
+    var isChatOpen by remember { mutableStateOf(false) }
     var input by remember { mutableStateOf("") }
     val messages = viewModel.messages
     val isTyping by viewModel.isTyping.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val listState = rememberLazyListState()
 
-    // Animation values
-    val mannequinScale by animateFloatAsState(
-        targetValue = if (isChatExpanded) 0.6f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "mannequinScale"
-    )
-    
-    val mannequinOffsetY by animateDpAsState(
-        targetValue = if (isChatExpanded) (-180).dp else 0.dp,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "mannequinOffset"
-    )
-
-    val chatAlpha by animateFloatAsState(
-        targetValue = if (isChatExpanded) 1f else 0.8f,
-        animationSpec = tween(300),
-        label = "chatAlpha"
-    )
+    var selectedZone by remember { mutableStateOf<BodyZone?>(null) }
+    var selectedSide by remember { mutableStateOf<Boolean?>(null) }
 
     LaunchedEffect(messages.size, isTyping) {
         if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size)
+            listState.animateScrollToItem(
+                index = messages.size - 1,
+                scrollOffset = 0
+            )
         }
     }
 
     fun handleSend() {
         if (input.isBlank()) return
-        isChatExpanded = true
+        isChatOpen = true
         viewModel.sendMessage(input)
         input = ""
     }
 
-    fun handleZone(zone: BodyZone) {
-        isChatExpanded = true
-        viewModel.selectZone(zone.label)
+    fun handleZone(zone: BodyZone, isBack: Boolean) {
+        selectedZone = zone
+        selectedSide = isBack
+        viewModel.selectZone("${zone.label}${if (isBack) " (Back)" else ""}")
+        isChatOpen = true
     }
 
     Box(
@@ -85,7 +79,7 @@ fun TriageScreen(viewModel: TriageViewModel = viewModel()) {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFFF8FAFC), Color(0xFFE0E7FF))
+                    colors = listOf(Color(0xFFDDF1FF), Color(0xFFFDF6FF))
                 )
             )
     ) {
@@ -93,172 +87,308 @@ fun TriageScreen(viewModel: TriageViewModel = viewModel()) {
             // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(20.dp).padding(top = 20.dp)
+                modifier = Modifier
+                    .padding(20.dp)
+                    .padding(top = 20.dp)
             ) {
                 Box(
-                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF4353FF).copy(alpha = 0.15f)),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF60A5FA).copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF4353FF), modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = Color(0xFF60A5FA),
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text("Triage AI", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1E293B))
-                    Text("Tap a zone — guidance, not diagnosis", fontSize = 11.sp, color = Color(0xFF64748B))
+                    Text(
+                        "MediSync Triage",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF1E293B)
+                    )
+                    Text(
+                        "Intelligent Guidance",
+                        fontSize = 11.sp,
+                        color = Color(0xFF64748B)
+                    )
                 }
-                if (isChatExpanded) {
+
+                if (isChatOpen) {
                     Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = { isChatExpanded = false }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close Chat", tint = Color(0xFF64748B))
+                    IconButton(
+                        onClick = { isChatOpen = false },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.5f))
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Close Chat", tint = Color.Black)
                     }
                 }
             }
 
-            Box(modifier = Modifier.weight(1f)) {
-                // Body Map Section (Mannequin)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .offset(y = mannequinOffsetY)
-                        .graphicsLayer {
-                            scaleX = mannequinScale
-                            scaleY = mannequinScale
-                        }
-                ) {
-                    Card(
-                        shape = RoundedCornerShape(32.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
-                        elevation = CardDefaults.cardElevation(0.dp),
-                        modifier = Modifier.fillMaxWidth().height(360.dp)
+            AnimatedContent(
+                targetState = isChatOpen,
+                transitionSpec = {
+                    (fadeIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + 
+                     slideInVertically(
+                         initialOffsetY = { it / 2 },
+                         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                     ))
+                        .togetherWith(fadeOut(animationSpec = tween(300)) + 
+                                     slideOutVertically(targetOffsetY = { it / 2 }))
+                },
+                label = "TriageViewTransition"
+            ) { chatOpen ->
+                if (!chatOpen) {
+                    // --- DEFAULT VIEW (Mannequin + Open Button) ---
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                                TriageMannequinView(
-                                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                                    onZoneSelected = { handleZone(it) }
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                        // Mannequin Section
+                        Box(
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                        ) {
+                            Card(
+                                shape = RoundedCornerShape(32.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B).copy(alpha = 0.05f)),
+                                modifier = Modifier.fillMaxSize()
                             ) {
-                                Text("FRONT", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
-                                Text("BACK", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box(
+                                        modifier = Modifier.weight(1f),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        TriageMannequinView(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(24.dp),
+                                            selectedZone = selectedZone,
+                                            selectedSide = selectedSide,
+                                            onZoneSelected = { zone, isBack -> handleZone(zone, isBack) }
+                                        )
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 16.dp),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        Text(
+                                            "FRONT",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF64748B)
+                                        )
+                                        Text(
+                                            "BACK",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+                                }
                             }
+                        }
+
+                        // Space for FAB or other elements
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Latest Message Preview
+                        if (messages.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(0.7f)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp)
+                            ) {
+                                Column {
+                                    Text(
+                                        "LATEST GUIDANCE",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF64748B),
+                                        modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
+                                    )
+                                    ChatBubble(messages.last())
+                                }
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.weight(0.7f))
                         }
                     }
-                }
-
-                // Chat Section (Slides up)
-                Box(
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                ) {
-                    val chatHeight by animateDpAsState(
-                        targetValue = if (isChatExpanded) 500.dp else 160.dp,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
-                        label = "chatHeight"
-                    )
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(chatHeight)
-                            .graphicsLayer { alpha = chatAlpha }
-                    ) {
-                        if (isChatExpanded) {
+                } else {
+                    // --- FULLSCREEN CHAT VIEW ---
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Box(modifier = Modifier.weight(1f)) {
                             LazyColumn(
                                 state = listState,
-                                modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(vertical = 12.dp)
+                                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
                             ) {
                                 items(messages) { msg ->
                                     ChatBubble(msg)
                                 }
-                                if (isTyping) {
+                                if (isTyping || isLoading) {
                                     item {
-                                        TypingIndicator()
+                                        if (isLoading) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(8.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(24.dp),
+                                                    color = Color(0xFF60A5FA),
+                                                    strokeWidth = 2.dp
+                                                )
+                                            }
+                                        } else {
+                                            TypingIndicator()
+                                        }
                                     }
                                 }
-                            }
-                        } else {
-                            // Intro bubble when not expanded
-                            Box(modifier = Modifier.padding(16.dp)) {
-                                ChatBubble(messages.first())
                             }
                         }
 
                         // Input Bar
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp).fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color.White,
+                            shadowElevation = 16.dp,
+                            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
                         ) {
-                            OutlinedTextField(
-                                value = input,
-                                onValueChange = { 
-                                    input = it
-                                },
-                                placeholder = { Text("Describe your symptoms...", fontSize = 14.sp) },
-                                modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = Color.White,
-                                    unfocusedContainerColor = Color.White,
-                                    focusedBorderColor = Color(0xFF4353FF),
-                                    unfocusedBorderColor = Color(0xFFE2E8F0)
-                                )
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Box(
+                            Row(
                                 modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(Color(0xFF4353FF), Color(0xFF7E57C2))
-                                        )
-                                    )
-                                    .clickable { handleSend() },
-                                contentAlignment = Alignment.Center
+                                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                                    .fillMaxWidth()
+                                    .navigationBarsPadding(),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White, modifier = Modifier.size(20.dp))
+                                OutlinedTextField(
+                                    value = input,
+                                    onValueChange = { input = it },
+                                    placeholder = {
+                                        Text(
+                                            "Describe your symptoms...",
+                                            fontSize = 14.sp,
+                                            color = Color.Black.copy(alpha = 0.4f)
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .heightIn(min = 52.dp),
+                                    textStyle = LocalTextStyle.current.copy(color = Color.Black),
+                                    shape = RoundedCornerShape(26.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.Black,
+                                        unfocusedTextColor = Color.Black,
+                                        focusedContainerColor = Color(0xFFF1F5F9),
+                                        unfocusedContainerColor = Color(0xFFF1F5F9),
+                                        focusedBorderColor = Color(0xFF60A5FA),
+                                        unfocusedBorderColor = Color.Transparent
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                FloatingActionButton(
+                                    onClick = { handleSend() },
+                                    modifier = Modifier.size(52.dp),
+                                    containerColor = Color(0xFF4F46E5),
+                                    contentColor = Color.White,
+                                    shape = CircleShape,
+                                    elevation = FloatingActionButtonDefaults.elevation(4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.Send,
+                                        contentDescription = "Send",
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
+        // Quick-Access FAB for Accessibility
+        if (!isChatOpen) {
+            FloatingActionButton(
+                onClick = { 
+                    isChatOpen = true
+                    if (messages.isEmpty()) viewModel.startGeneralTriage()
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(24.dp)
+                    .padding(bottom = 16.dp), // Adjust for bottom bar
+                containerColor = Color(0xFF4F46E5),
+                contentColor = Color.White,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Chat with AI", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
     }
 }
-
 
 @Composable
 fun ChatBubble(msg: ChatMessage) {
     val isUser = msg.role == "user"
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+    val isEmergency = msg.text.contains("EMERGENCY", ignoreCase = true) || 
+                      msg.text.contains("URGENT", ignoreCase = true)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isUser) 16.dp else 4.dp,
-                        bottomEnd = if (isUser) 4.dp else 16.dp
-                    )
-                )
-                .background(if (isUser) Color(0xFF5C6BC0) else Color.White)
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+        Surface(
+            color = when {
+                isUser -> Color(0xFF60A5FA) // UserBubble (Sky Blue)
+                isEmergency -> Color(0xFFFFEBEE)
+                else -> Color.White // AIBubble (White)
+            },
+            shape = RoundedCornerShape(
+                topStart = 20.dp,
+                topEnd = 20.dp,
+                bottomStart = if (isUser) 20.dp else 4.dp,
+                bottomEnd = if (isUser) 4.dp else 20.dp
+            ),
+            shadowElevation = 2.dp,
+            border = if (!isUser) BorderStroke(1.dp, Color(0xFFF1F5F9)) else null,
+            modifier = Modifier.widthIn(max = 300.dp)
         ) {
             Text(
                 text = msg.text,
-                color = if (isUser) Color.White else Color(0xFF1E293B),
-                fontSize = 14.sp,
-                lineHeight = 20.sp
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                color = if (isEmergency && !isUser) Color.Red else if (isUser) Color.White else Color(0xFF1E293B),
+                fontSize = 15.sp,
+                fontWeight = if (isEmergency) FontWeight.Bold else FontWeight.Normal,
+                lineHeight = 22.sp
             )
         }
     }
@@ -268,13 +398,14 @@ fun ChatBubble(msg: ChatMessage) {
 fun TypingIndicator() {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp))
             .background(Color.White)
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         repeat(3) {
-            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF64748B)))
+            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF4353FF).copy(alpha = 0.6f)))
         }
     }
 }
